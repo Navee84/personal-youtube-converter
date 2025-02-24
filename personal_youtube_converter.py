@@ -2,13 +2,13 @@ try:
     import customtkinter as tk
     from CTkMessagebox import CTkMessagebox
     from pytubefix import YouTube, Playlist
-    from PIL import Image
+    from PIL import Image, ImageTk
 except Exception as e:
     print(e)
     input("")
     exit()
 
-version = "0.1.0"
+version = "0.1.1"
 DEBUG = False
 
 tk.set_default_color_theme("dark-blue")
@@ -31,6 +31,8 @@ class App(tk.CTk):
         self.title("Personal Youtube Converter")
         self.geometry(str(window_height)+"x"+str(window_width))
         self.minsize(window_height,window_width)
+        self.icon = ImageTk.PhotoImage(file="assets/youtube_color.png")
+        self.after(200, lambda: self.iconphoto(False,self.icon))
 
         for i in range(3):
             self.grid_rowconfigure(i,weight=1)
