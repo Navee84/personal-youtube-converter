@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 🟥 stands for removed<br>
 🟪 stands for fixed<br>
 
+## [v0.1.1]
+- 🟩 The application now have an icon
+
 ## [v0.1.0]
 - 🟩 First release of the project  
 - 🟩 Supports downloading videos in MP3 format  
