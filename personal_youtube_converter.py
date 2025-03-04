@@ -1,5 +1,6 @@
 try:
     import customtkinter as tk
+    import os
     from CTkMessagebox import CTkMessagebox
     from pytubefix import YouTube, Playlist
     from PIL import Image, ImageTk
@@ -8,7 +9,7 @@ except Exception as e:
     input("")
     exit()
 
-version = "0.1.1"
+version = "0.2.0"
 DEBUG = False
 
 tk.set_default_color_theme("dark-blue")
@@ -22,74 +23,14 @@ tk.set_appearance_mode("dark")
 # \____|_|\__,_|___/___/\___||___/#
 ###################################
 
-
-class App(tk.CTk):
-    def __init__(self,window_height:int,window_width:int):
-        super().__init__()
-
-        # app paramaters
-        self.title("Personal Youtube Converter")
-        self.geometry(str(window_height)+"x"+str(window_width))
-        self.minsize(window_height,window_width)
-        self.icon = ImageTk.PhotoImage(file="assets/youtube_color.png")
-        self.after(200, lambda: self.iconphoto(False,self.icon))
-
-        for i in range(3):
-            self.grid_rowconfigure(i,weight=1)
-            self.grid_columnconfigure(i,weight=1)
-        self.grid_columnconfigure(1, weight=2)
-        self.grid_columnconfigure(2, weight=0)
-        
-        # icons import
-        self.folder_icon = tk.CTkImage(dark_image=Image.open("assets/folder_light.png"),light_image=Image.open("assets/folder_dark.png"))
-        self.confirm_icon = tk.CTkImage(dark_image=Image.open("assets/check_light.png"),light_image=Image.open("assets/check_dark.png"))
-        self.trash_icon = tk.CTkImage(dark_image=Image.open("assets/bin_light.png"),light_image=Image.open("assets/bin_dark.png"))
-        self.download_icon = tk.CTkImage(dark_image=Image.open("assets/download_light.png"),light_image=Image.open("assets/download_dark.png"))
-
-
-        # Initializing the download queue
-        self.download_queue = Queue(self)
-
-        # initiating all classes
-        self.queue_global_frame = QueueGlobalFrame(self)
-        self.queue_global_frame.grid(row=1, column=1, sticky="nsew")
-
-        self.input_frame = InputFrame(self)
-        self.input_frame.grid(row=2, column=1, sticky="ew")
-
-        self.misc_frame = MiscFrame(self)
-        self.misc_frame.grid(row=1,column=2,sticky="nsew")
-
-
-    def entry_freeze(self,value:bool):
-        self.input_frame.input_entry_freeze(value)
-    
-    def visual_update(self):
-        print("UPDATING VISUAL")
-        self.queue_global_frame.queue_refresh(self.download_queue.get_videos_properties())
-        self.misc_frame.update_infos()
-    
-    # debug functions
-    def debug_insert_playlist(self):
-        self.input_frame.url_entry.insert(0,"https://www.youtube.com/playlist?list=PLLWxffLzEPlKwfDR3QgYu-yBeEtGE6Fw3")
-        self.input_frame.send_to_queue()
-    
-    def debug_insert(self):
-        self.input_frame.url_entry.insert(0,"https://www.youtube.com/watch?v=4JWANCA-Pbw")
-        self.input_frame.send_to_queue()
-    
-    def debug_download_queue(self):
-        self.download_queue.start_download()
-
-
 class Utils():
-    def textbox_show_error(self,title:str,message:str):
+    def textbox_show_error(self,title:str,message:str)->None:
         error = CTkMessagebox(title=title, message=message, icon="cancel", sound=True, fade_in_duration=100, header=True, topmost=False)
     
-    def textbox_show_info(self,title:str,message:str):
+    def textbox_show_info(self,title:str,message:str)->None:
         info = CTkMessagebox(title=title, message=message, icon="info", sound=True, fade_in_duration=100, header=True, topmost=False)
 
-    def textbox_confirmation(self,title:str,message:str,icon:str):
+    def textbox_confirmation(self,title:str,message:str,icon:str)->bool:
         confirmation = CTkMessagebox(title=title, message=message, icon=icon, sound=True, fade_in_duration=100, header=True, topmost=False, option_1="Yes", option_2="No")
         response = confirmation.get()
 
@@ -113,6 +54,93 @@ class Utils():
             return str(round(size,1))+"MB"
         
         return str(round((size/1000),1))+"GB"
+
+    def openfolder(self):
+        return tk.filedialog.askdirectory()
+
+
+class App(tk.CTk,Utils):
+    def __init__(self,window_height:int,window_width:int):
+        super().__init__()
+        self.starting_prompt = CTkMessagebox(title="Opening", message="Starting personal youtube converter, please wait...", icon="info", sound=False, fade_in_duration=200, header=True, topmost=True)
+        
+        # icons import
+        self.folder_icon = tk.CTkImage(dark_image=Image.open("assets/folder_light.png"),light_image=Image.open("assets/folder_dark.png"))
+        self.confirm_icon = tk.CTkImage(dark_image=Image.open("assets/check_light.png"),light_image=Image.open("assets/check_dark.png"))
+        self.trash_icon = tk.CTkImage(dark_image=Image.open("assets/bin_light.png"),light_image=Image.open("assets/bin_dark.png"))
+        self.download_icon = tk.CTkImage(dark_image=Image.open("assets/download_light.png"),light_image=Image.open("assets/download_dark.png"))
+
+        # app paramaters
+        self.title("Personal Youtube Converter")
+        self.geometry(str(window_height)+"x"+str(window_width))
+        self.minsize(window_height,window_width)
+        self.icon = ImageTk.PhotoImage(file="assets/youtube_color.png")
+        self.after(200, lambda: self.iconphoto(False,self.icon))
+
+        for i in range(3):
+            self.grid_rowconfigure(i,weight=1)
+            self.grid_columnconfigure(i,weight=1)
+        self.grid_columnconfigure(1, weight=2)
+        self.grid_columnconfigure(2, weight=0)
+
+
+        # Default download path
+        if not os.path.exists("./download_directory.txt"):
+            os.mkdir("./downloads")
+            with open("./download_directory.txt","w") as download_directory_file:
+                download_directory_file.write("./downloads")
+
+        with open("./download_directory.txt","r") as download_directory_file:
+            self.default_download_directory_path = self.check_path(download_directory_file.read())
+
+
+        # Initializing the download queue
+        self.download_queue = Queue(self)
+
+        # initiating all classes
+        self.queue_global_frame = QueueGlobalFrame(self)
+        self.queue_global_frame.grid(row=1, column=1, sticky="nsew")
+
+        self.input_frame = InputFrame(self)
+        self.input_frame.grid(row=2, column=1, sticky="ew")
+
+        self.misc_frame = MiscFrame(self)
+        self.misc_frame.grid(row=1,column=2,sticky="nsew")
+
+
+
+    def entry_freeze(self,value:bool)->None:
+        self.input_frame.input_entry_freeze(value)
+    
+    def visual_update(self)->None:
+        print("UPDATING VISUAL")
+        self.queue_global_frame.queue_refresh(self.download_queue.get_videos_properties())
+        self.misc_frame.update_infos()
+    
+    def check_path(self,path:str)->str:
+        if not os.path.exists(path):
+            self.textbox_show_error(title="Default path error", message="The default download directory path does not exists, please change it.\nUsing default path instead.")
+            return "./downloads"
+        return path
+    
+    def set_default_download_directory_path(self,new_path:str)->None:
+        print(f"setting path : {new_path}")
+        with open("./download_directory.txt","w") as file:
+            file.write(new_path)
+        
+
+    
+    # debug functions
+    def debug_insert_playlist(self):
+        self.input_frame.url_entry.insert(0,"https://www.youtube.com/playlist?list=PLLWxffLzEPlKwfDR3QgYu-yBeEtGE6Fw3")
+        self.input_frame.send_to_queue()
+    
+    def debug_insert(self):
+        self.input_frame.url_entry.insert(0,"https://www.youtube.com/watch?v=4JWANCA-Pbw")
+        self.input_frame.send_to_queue()
+    
+    def debug_download_queue(self):
+        self.download_queue.start_download()
 
 
 class Video(Utils):
@@ -303,9 +331,8 @@ class QueueElement(tk.CTkFrame,Utils):
         element_format_button.grid(row=0, column=3,sticky="ew")
 
         # element directory button
-        directory_button = tk.CTkButton(self,image=parent.parent.parent.folder_icon,text="",width=45,height=35)
+        directory_button = tk.CTkButton(self,image=parent.parent.parent.folder_icon,text="",width=45,height=35, command=self.set_download_path)
         directory_button.grid(row=0,column=4, sticky="ew")
-        directory_button.configure(state="diabled")
 
         # element remove button
         element_removre_button = tk.CTkButton(self,image=parent.parent.parent.trash_icon,text="",width=45,height=35, command=self.remove_self_from_queue)
@@ -313,6 +340,10 @@ class QueueElement(tk.CTkFrame,Utils):
     
     def remove_self_from_queue(self):
         self.parent.parent.parent.download_queue.remove(self.index)
+    
+    def set_download_path(self):
+        new_folder = self.openfolder()
+        self.parent.parent.parent.download_queue.queue[self.index].path = new_folder
 
 
 class InputFrame(tk.CTkFrame, Utils):
@@ -337,13 +368,14 @@ class InputFrame(tk.CTkFrame, Utils):
         self.format_button.grid(row=0, column=1, sticky="ew")
 
         # directory button
-        self.directory_button = tk.CTkButton(self,image=parent.folder_icon,text="",width=50,height=35)
+        self.directory_button = tk.CTkButton(self,image=parent.folder_icon,text="",width=50,height=35, command=self.select_path)
         self.directory_button.grid(row=0,column=2,padx=10)
-        self.directory_button.configure(state="disabled")
 
         # confirm button
         self.confirm_button = tk.CTkButton(self,image=parent.confirm_icon,text="",width=50,height=35, command=self.send_to_queue)
         self.confirm_button.grid(row=0,column=3)
+
+        self.selected_path = parent.default_download_directory_path
     
     def input_entry_freeze(self,state:bool):
         # /!\ REMEMBER TO ADD FORMAT BUTTON WHEN IMPLEMENTING MP4 SUPPORT /!\
@@ -361,8 +393,9 @@ class InputFrame(tk.CTkFrame, Utils):
         print("cleared entry")
         self.url_entry.delete(0,tk.END)
 
+    def select_path(self):
+        self.select_path = self.openfolder()
 
-    
     def get_selected_format(self)->int:
         match self.format_button.get():
             case "MP3" :
@@ -371,8 +404,11 @@ class InputFrame(tk.CTkFrame, Utils):
             case "MP4" :
                 return 1
 
-    def get_selected_path(self)->str:
-        return "./downloads"
+    def get_selected_path(self):
+        if not os.path.exists(self.selected_path):
+            self.textbox_show_error(title="Path error", message="The selected download path does not exists\nUsing default path instead.")
+            return "./downloads"
+        return self.selected_path
 
 
     def url_is_correct(self,url:str)->bool:
@@ -415,7 +451,7 @@ class InputFrame(tk.CTkFrame, Utils):
                         self.parent.download_queue.add(video)
                         self.parent.visual_update()
             except Exception as e:
-                self.textbox_show_error("Error",e+"\nplease try again")
+                self.textbox_show_error("Error",str(e)+"\nplease try again")
 
 
         self.parent.entry_freeze(False)
@@ -438,9 +474,8 @@ class MiscFrame(tk.CTkFrame,Utils):
 
 
         # deflault folder button
-        self.default_directory_button = tk.CTkButton(self,image=parent.folder_icon,text="",width=80,height=35)
+        self.default_directory_button = tk.CTkButton(self,image=parent.folder_icon,text="",width=80,height=35, command=self.set_default_download_directory)
         self.default_directory_button.grid(row=1 ,column=0,padx=10)
-        self.default_directory_button.configure(state="disabled")
 
         # empty queue button
         self.empty_queue = tk.CTkButton(self,image=parent.trash_icon,text="",width=80,height=35, command=self.empty_queue)
@@ -465,9 +500,21 @@ class MiscFrame(tk.CTkFrame,Utils):
             self.parent.download_queue.start_download()
         else:
             self.textbox_show_error("Error","Cannot download empty queue.")
+
+    def set_default_download_directory(self):
+        if not self.textbox_confirmation(title="Default diretory", message="Change the default directory for downloaded files ?", icon="question"):
+            return None
+
+        new_path = self.openfolder()
+
+        if not os.path.exists(new_path):
+            return None
+
+        self.parent.set_default_download_directory_path(new_path)
+
     
     def empty_queue(self):
-        if self.textbox_confirmation(title="Youtube Converter",message="Are you sure you want to empty the queue ?",icon="warning"):
+        if self.textbox_confirmation(title="Empty queue",message="Are you sure you want to empty the queue ?",icon="warning"):
             self.parent.download_queue.empty_queue()
     
     def get_total_queue_size(self):
@@ -501,4 +548,5 @@ if DEBUG :
     thread_console = threading.Thread(target=start_console, daemon=True)
     thread_console.start()
 
+app.starting_prompt.destroy()
 app.mainloop()
