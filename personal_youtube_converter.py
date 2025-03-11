@@ -9,7 +9,7 @@ except Exception as e:
     input("")
     exit()
 
-version = "0.2.0"
+version = "0.2.1"
 DEBUG = False
 
 tk.set_default_color_theme("dark-blue")
@@ -62,7 +62,6 @@ class Utils():
 class App(tk.CTk,Utils):
     def __init__(self,window_height:int,window_width:int):
         super().__init__()
-        self.starting_prompt = CTkMessagebox(title="Opening", message="Starting personal youtube converter, please wait...", icon="info", sound=False, fade_in_duration=200, header=True, topmost=True)
         
         # icons import
         self.folder_icon = tk.CTkImage(dark_image=Image.open("assets/folder_light.png"),light_image=Image.open("assets/folder_dark.png"))
@@ -127,20 +126,25 @@ class App(tk.CTk,Utils):
         print(f"setting path : {new_path}")
         with open("./download_directory.txt","w") as file:
             file.write(new_path)
-        
+        self.default_download_directory_path = new_path
+        self.input_frame.selected_path = new_path
 
     
     # debug functions
-    def debug_insert_playlist(self):
+    def debugInsertPlaylist(self):
         self.input_frame.url_entry.insert(0,"https://www.youtube.com/playlist?list=PLLWxffLzEPlKwfDR3QgYu-yBeEtGE6Fw3")
         self.input_frame.send_to_queue()
     
-    def debug_insert(self):
+    def debugInsert(self):
         self.input_frame.url_entry.insert(0,"https://www.youtube.com/watch?v=4JWANCA-Pbw")
         self.input_frame.send_to_queue()
     
-    def debug_download_queue(self):
+    def debugDownloadQueue(self):
         self.download_queue.start_download()
+    
+    def debugShowPaths(self):
+        print(f"Default download path : {self.default_download_directory_path}")
+        print(f"Input donload path :{self.input_frame.select_path}")
 
 
 class Video(Utils):
@@ -394,7 +398,7 @@ class InputFrame(tk.CTkFrame, Utils):
         self.url_entry.delete(0,tk.END)
 
     def select_path(self):
-        self.select_path = self.openfolder()
+        self.selected_path = self.openfolder()
 
     def get_selected_format(self)->int:
         match self.format_button.get():
@@ -548,5 +552,4 @@ if DEBUG :
     thread_console = threading.Thread(target=start_console, daemon=True)
     thread_console.start()
 
-app.starting_prompt.destroy()
 app.mainloop()
