@@ -32,6 +32,11 @@ You can find a guide on how to get PO tokens [here.](https://pytubefix.readthedo
 
 ### Using the program
 Simply **get your YouTube video or playlist URL** from your browser (not the URL from the share button or the URL from a single video inside a playlist) and **paste it in the program.**
+
+URL format supported : 
+- https://www.youtube.com/watch?v=[video id] -> for videos
+- https://www.youtube.com/playlist?list=[playlist id] -> for playlists
+
 Then add it to the download queue. This action might take some time, and the program may appear frozen, but patience is key.
 
 Once you've added all the videos you wanted to download to the queue, simply **click the download button** and wait for the queue to download.
