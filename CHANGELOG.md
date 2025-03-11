@@ -8,6 +8,12 @@ Code only related changes will be written *in italic.*
 🟥 stands for removed<br>
 🟪 stands for fixed<br>
 
+## [v0.2.1]
+- 🟪 Changing the default download directory no longer require a restart of the program
+- 🟪 Changing the input download directory now works
+
+- 🟥 Removed the starting prompt because it had no real purpose
+
 ## [v0.2.0]
 - 🟩 New librarie used : os
 - 🟩 Added a starting prompt
